@@ -28,7 +28,7 @@ class SitemapCrawler:
         robots_url = urljoin(self.base_url, path)
         sitemaps = []
 
-        text = await self.fetch(session, robots_url, "text/plain")
+        text = await self.fetch(session, robots_url, ["text/plain"])
         for line in text.splitlines():
             if line.lower().startswith("sitemap:"):
                 sitemap_url = line.split(":", 1)[1].strip()
@@ -40,7 +40,7 @@ class SitemapCrawler:
         try:
             async with self.semaphore:
                 async with session.get(sitemap_url, timeout=10) as response:
-                    if response.status == 200 and response.content_type == content_type:
+                    if response.status == 200 and response.content_type in content_type:
                         return await response.text()
         except Exception as e:
             print(f"[ERROR] Couldn't fetch sitemap: {sitemap_url} - {str(e)}")
@@ -52,7 +52,9 @@ class SitemapCrawler:
 
         self.visited.add(sitemap_url)
 
-        xml_content = await self.fetch(session, sitemap_url, "text/xml")
+        xml_content = await self.fetch(
+            session, sitemap_url, ["text/xml", "application/xml"]
+        )
         if not xml_content:
             return
         try:
@@ -76,7 +78,6 @@ class SitemapCrawler:
             if not sitemap_urls:
                 print(f"[WARNING] No sitemaps found for {self.base_url}")
                 return []
-
             tasks = [self.parse_sitemap(session, url) for url in sitemap_urls]
             await asyncio.gather(*tasks)
             await asyncio.sleep(5)

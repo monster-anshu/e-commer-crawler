@@ -1,6 +1,9 @@
-def main():
-    print("Hello from web-crawler!")
+import asyncio
+from crawler import WebCrawler
 
+urls = ["https://www.virgio.com", "https://www.nykaafashion.com"]
 
 if __name__ == "__main__":
-    main()
+    for url in urls:
+        crawler = WebCrawler(url)
+        asyncio.run(crawler.start())

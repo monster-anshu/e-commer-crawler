@@ -21,6 +21,20 @@ class SitemapCrawler:
         self.semaphore = asyncio.Semaphore(5)
         self.visited = set()
 
+    async def fetch(self, session, url, content_type):
+        try:
+            async with self.semaphore:
+                async with session.get(url, timeout=10) as response:
+                    if response.status == 200 and response.content_type in content_type:
+                        return await response.text()
+        except Exception as e:
+            print(f"[ERROR] Failed to fetch {url} - {str(e)}")
+        return None
+
+    def is_valid_url(self, url):
+        parsed = urlparse(url)
+        return parsed.netloc == self.domain or parsed.netloc == ""
+
     def is_product_url(self, url):
         return re.search(r"/products/|/product/|/p/", url)
 
@@ -36,41 +50,31 @@ class SitemapCrawler:
 
         return sitemaps
 
-    async def fetch(self, session, sitemap_url, content_type):
-        try:
-            async with self.semaphore:
-                async with session.get(sitemap_url, timeout=10) as response:
-                    if response.status == 200 and response.content_type in content_type:
-                        return await response.text()
-        except Exception as e:
-            print(f"[ERROR] Couldn't fetch sitemap: {sitemap_url} - {str(e)}")
-        return None
-
-    async def parse_sitemap(self, session, sitemap_url):
-        if sitemap_url in self.visited:
+    async def crawl(self, session, url):
+        if url in self.visited:
             return
+        self.visited.add(url)
 
-        self.visited.add(sitemap_url)
-
-        xml_content = await self.fetch(
-            session, sitemap_url, ["text/xml", "application/xml"]
-        )
+        xml_content = await self.fetch(session, url, ["text/xml", "application/xml"])
         if not xml_content:
             return
+
         try:
             root = ET.fromstring(xml_content)
             namespace = {"ns": "http://www.sitemaps.org/schemas/sitemap/0.9"}
             for url in root.findall(".//ns:loc", namespace):
                 loc = url.text.strip()
 
+                if not self.is_valid_url(loc):
+                    continue
                 if self.is_product_url(loc):
                     self.product_urls.add(loc)
-
+                    continue  # no need to go to product page
                 if loc not in self.visited:
-                    asyncio.create_task(self.parse_sitemap(session, loc))
+                    asyncio.create_task(self.crawl(session, loc))  # Recursive crawl
 
         except ET.ParseError as e:
-            print(f"[ERROR] XML parse error in sitemap: {sitemap_url} - {str(e)}")
+            print(f"[ERROR] XML parse error in sitemap: {url} - {str(e)}")
 
     async def start(self, sitemap_url=None):
         async with aiohttp.ClientSession(headers=headers) as session:
@@ -78,7 +82,7 @@ class SitemapCrawler:
             if not sitemap_urls:
                 print(f"[WARNING] No sitemaps found for {self.base_url}")
                 return []
-            tasks = [self.parse_sitemap(session, url) for url in sitemap_urls]
+            tasks = [self.crawl(session, url) for url in sitemap_urls]
             await asyncio.gather(*tasks)
             await asyncio.sleep(5)
 

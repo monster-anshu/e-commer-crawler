@@ -9,3 +9,6 @@ def save_output(domain, urls, type: str):
     with open(file_path, "w") as f:
         json.dump({domain: urls}, f, indent=2)
     print(f"[INFO] Saved {len(urls)} product URLs to {file_path}")
+
+
+DEFAULT_PRODUCT_REGEX = r"/products/|/product/|/p/|/p-"

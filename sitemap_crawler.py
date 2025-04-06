@@ -3,7 +3,7 @@ import asyncio
 import xml.etree.ElementTree as ET
 import re
 from urllib.parse import urlparse, urljoin
-from utils import save_output
+from utils import save_output, DEFAULT_PRODUCT_REGEX
 import gzip
 from io import BytesIO
 
@@ -16,12 +16,13 @@ headers = {
 
 
 class SitemapCrawler:
-    def __init__(self, base_url):
+    def __init__(self, base_url, regex=DEFAULT_PRODUCT_REGEX):
         self.base_url = base_url
         self.domain = urlparse(base_url).netloc
         self.product_urls = set()
         self.semaphore = asyncio.Semaphore(5)
         self.visited = set()
+        self.regex = regex
 
     async def fetch(self, session, url, content_type):
         try:
@@ -44,7 +45,7 @@ class SitemapCrawler:
         return parsed.netloc == self.domain or parsed.netloc == ""
 
     def is_product_url(self, url):
-        return re.search(r"/products/|/product/|/p/|/p-", url)
+        return re.search(self.regex, url)
 
     async def fetch_robot_txt(self, session, path="/robots.txt"):
         robots_url = urljoin(self.base_url, path)

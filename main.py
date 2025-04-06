@@ -3,16 +3,20 @@ from crawler import WebCrawler
 from sitemap_crawler import SitemapCrawler
 import sys
 
-urls = [
-    "https://www.virgio.com",
-    "https://www.tatacliq.com",
-    "https://www.nykaafashion.com",
-    "https://www.westside.com",
+targets = [
+    {"url": "https://www.virgio.com", "regex": r"/products/"},
+    {"url": "https://www.tatacliq.com", "regex": r"/p-"},
+    {"url": "https://www.nykaafashion.com", "regex": r"/p/"},
+    {"url": "https://www.westside.com", "regex": r"/products/"},
 ]
 
 
 if __name__ == "__main__":
     use_sitemap = "--sitemap" in sys.argv
-    for url in urls:
-        crawler = SitemapCrawler(url) if use_sitemap else WebCrawler(url)
+    for target in targets:
+        crawler = (
+            SitemapCrawler(target["url"], target["regex"])
+            if use_sitemap
+            else WebCrawler(target["url"], target["regex"])
+        )
         asyncio.run(crawler.start())

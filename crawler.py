@@ -3,7 +3,7 @@ import aiohttp
 from bs4 import BeautifulSoup
 from urllib.parse import urljoin, urlparse
 import re
-from utils import save_output
+from utils import save_output, DEFAULT_PRODUCT_REGEX
 
 headers = {
     "User-Agent": "PostmanRuntime/7.43.3",
@@ -14,12 +14,13 @@ headers = {
 
 
 class WebCrawler:
-    def __init__(self, base_url):
+    def __init__(self, base_url, regex=DEFAULT_PRODUCT_REGEX):
         self.base_url = base_url
         self.domain = urlparse(base_url).netloc
         self.visited = set()
         self.product_urls = set()
         self.semaphore = asyncio.Semaphore(5)  # Control concurrency
+        self.regex = regex
 
     async def fetch(self, session, url):
         try:
@@ -38,7 +39,7 @@ class WebCrawler:
         return parsed.netloc == self.domain or parsed.netloc == ""
 
     def is_product_url(self, url):
-        return re.search(r"/products/|/product/|/p/", url)
+        return re.search(self.regex, url)
 
     async def crawl(self, session, url):
         if url in self.visited:

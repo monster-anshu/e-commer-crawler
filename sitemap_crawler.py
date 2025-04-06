@@ -4,6 +4,8 @@ import xml.etree.ElementTree as ET
 import re
 from urllib.parse import urlparse, urljoin
 from utils import save_output
+import gzip
+from io import BytesIO
 
 headers = {
     "User-Agent": "PostmanRuntime/7.43.3",
@@ -26,6 +28,12 @@ class SitemapCrawler:
             async with self.semaphore:
                 async with session.get(url, timeout=10) as response:
                     if response.status == 200 and response.content_type in content_type:
+                        if response.content_type == "application/gzip":
+                            content = await response.read()
+                            with gzip.GzipFile(fileobj=BytesIO(content)) as f:
+                                content = f.read()
+                                return content
+
                         return await response.text()
         except Exception as e:
             print(f"[ERROR] Failed to fetch {url} - {str(e)}")
@@ -36,7 +44,7 @@ class SitemapCrawler:
         return parsed.netloc == self.domain or parsed.netloc == ""
 
     def is_product_url(self, url):
-        return re.search(r"/products/|/product/|/p/", url)
+        return re.search(r"/products/|/product/|/p/|/p-", url)
 
     async def fetch_robot_txt(self, session, path="/robots.txt"):
         robots_url = urljoin(self.base_url, path)
@@ -55,7 +63,9 @@ class SitemapCrawler:
             return
         self.visited.add(url)
 
-        xml_content = await self.fetch(session, url, ["text/xml", "application/xml"])
+        xml_content = await self.fetch(
+            session, url, ["text/xml", "application/xml", "application/gzip"]
+        )
         if not xml_content:
             return
 
@@ -64,7 +74,6 @@ class SitemapCrawler:
             namespace = {"ns": "http://www.sitemaps.org/schemas/sitemap/0.9"}
             for url in root.findall(".//ns:loc", namespace):
                 loc = url.text.strip()
-
                 if not self.is_valid_url(loc):
                     continue
                 if self.is_product_url(loc):

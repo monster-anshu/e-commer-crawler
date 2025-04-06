@@ -40,7 +40,7 @@ class SitemapCrawler:
 
     async def fetch_robot_txt(self, session, path="/robots.txt"):
         robots_url = urljoin(self.base_url, path)
-        sitemaps = []
+        sitemaps: list[str] = []
 
         text = await self.fetch(session, robots_url, ["text/plain"])
         for line in text.splitlines():
@@ -69,6 +69,7 @@ class SitemapCrawler:
                     continue
                 if self.is_product_url(loc):
                     self.product_urls.add(loc)
+                    print(f"{len(self.product_urls)}: Added url to products : {loc}")
                     continue  # no need to go to product page
                 if loc not in self.visited:
                     asyncio.create_task(self.crawl(session, loc))  # Recursive crawl
@@ -78,12 +79,19 @@ class SitemapCrawler:
 
     async def start(self, sitemap_url=None):
         async with aiohttp.ClientSession(headers=headers) as session:
-            sitemap_urls = sitemap_url or await self.fetch_robot_txt(session)
-            if not sitemap_urls:
+            sitemap_urls = (
+                [sitemap_url] if sitemap_url else await self.fetch_robot_txt(session)
+            )
+            sitemap_url = sitemap_urls[0]
+            if not sitemap_url:
                 print(f"[WARNING] No sitemaps found for {self.base_url}")
                 return []
-            tasks = [self.crawl(session, url) for url in sitemap_urls]
-            await asyncio.gather(*tasks)
-            await asyncio.sleep(5)
+
+            print(f"Starting sitemap crawler for : {self.domain}")
+            await self.crawl(session, sitemap_url)
+            await asyncio.sleep(3)
+
+            # tasks = [self.crawl(session, url) for url in sitemap_urls]
+            # await asyncio.gather(*tasks)
 
             save_output(self.domain, list(self.product_urls), "sitemap")

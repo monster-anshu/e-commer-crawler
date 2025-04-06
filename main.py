@@ -1,6 +1,7 @@
 import asyncio
 from crawler import WebCrawler
 from sitemap_crawler import SitemapCrawler
+import sys
 
 urls = [
     "https://www.virgio.com",
@@ -9,9 +10,9 @@ urls = [
     "https://www.westside.com",
 ]
 
-use_sitemap = True
 
 if __name__ == "__main__":
+    use_sitemap = "--sitemap" in sys.argv
     for url in urls:
         crawler = SitemapCrawler(url) if use_sitemap else WebCrawler(url)
         asyncio.run(crawler.start())

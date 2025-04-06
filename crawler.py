@@ -57,11 +57,14 @@ class WebCrawler:
                 continue
             if self.is_product_url(full_url):
                 self.product_urls.add(full_url)
+                print(f"{len(self.product_urls)}: Added url to products : {full_url}")
             if full_url not in self.visited and self.base_url in full_url:
                 asyncio.create_task(self.crawl(session, full_url))  # Recursive crawl
 
     async def start(self):
         async with aiohttp.ClientSession(headers=headers) as session:
+            print(f"Starting web crawler for : {self.domain}")
+
             await self.crawl(session, self.base_url)
-            await asyncio.sleep(5)  # Allow other tasks to finish
+            await asyncio.sleep(3)  # Allow other tasks to finish
             save_output(self.domain, list(self.product_urls), "web")

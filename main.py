@@ -5,7 +5,10 @@ import sys
 
 targets = [
     {"url": "https://www.virgio.com", "regex": r"/products/"},
-    {"url": "https://www.tatacliq.com", "regex": r"/p-"},
+    {
+        "url": "https://www.tatacliq.com",
+        "regex": r"/p-",
+    },  # need javascript to run so have to use playwright or use sitemap only
     {"url": "https://www.nykaafashion.com", "regex": r"/p/"},
     {"url": "https://www.westside.com", "regex": r"/products/"},
 ]

@@ -64,4 +64,4 @@ class WebCrawler:
         async with aiohttp.ClientSession(headers=headers) as session:
             await self.crawl(session, self.base_url)
             await asyncio.sleep(5)  # Allow other tasks to finish
-            save_output(self.domain, list(self.product_urls))
+            save_output(self.domain, list(self.product_urls), "web")

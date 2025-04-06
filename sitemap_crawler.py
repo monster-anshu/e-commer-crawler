@@ -86,4 +86,4 @@ class SitemapCrawler:
             await asyncio.gather(*tasks)
             await asyncio.sleep(5)
 
-            save_output(self.domain, list(self.product_urls))
+            save_output(self.domain, list(self.product_urls), "sitemap")

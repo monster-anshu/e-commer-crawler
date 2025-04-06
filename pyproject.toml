@@ -1,7 +1,7 @@
 [project]
-name = "web-crawler"
+name = "e-commerce-crawler"
 version = "0.1.0"
-description = "Add your description here"
+description = "Web crawler to fetch product url from e-commerce website using href and sitemaps"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
